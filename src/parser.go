@@ -1,25 +1,18 @@
 package src
 
 func Parse(input string) (*Node, error) {
-	root:=&Node{Type: DocumentNode}
-	stack:=[]*Node{root}
-	lex:=newTokenizer(input)
+	root := &Node{Type: DocumentNode}
+	stack := []*Node{root}
+	lex := newTokenizer(input)
 
 	for {
-		tok, err:=lex.nextToken()
-		if err!=nil {
-			return nil, err
-		}
+		tok := lex.nextToken()
 
 		switch tok.kind {
 		case tokenEOF:
-			if len(stack)>1 {
-				open:=stack[len(stack)-1]
-				return nil, makeParseError("unclosed_tag", "unclosed tag at EOF: <"+open.Tag+">", tok.pos, input)
-			}
 			return root, nil
 		case tokenText:
-			if tok.data=="" {
+			if tok.data == "" {
 				continue
 			}
 			stack[len(stack)-1].AppendChild(&Node{Type: TextNode, Data: tok.data})
@@ -28,64 +21,60 @@ func Parse(input string) (*Node, error) {
 		case tokenDoctype:
 			stack[len(stack)-1].AppendChild(&Node{Type: DoctypeNode, Data: tok.data})
 		case tokenStartTag:
-			if tok.selfClosing && !isVoidElement(tok.name) {
-				return nil, makeParseError("invalid_self_closing", "non-void element cannot be self-closing: <"+tok.name+"/>", tok.pos, input)
+			seenAttrs := make(map[string]struct{}, len(tok.attrs))
+			normalizedAttrs := make([]Attribute, 0, len(tok.attrs))
+			for _, attr := range tok.attrs {
+				if attr.Name == "" {
+					continue
+				}
+				if _, ok := seenAttrs[attr.Name]; ok {
+					continue
+				}
+				seenAttrs[attr.Name] = struct{}{}
+				normalizedAttrs = append(normalizedAttrs, attr)
 			}
-			dup:=findDuplicateAttribute(tok.attrs)
-			if dup!="" {
-				return nil, makeParseError("duplicate_attribute", "duplicate attribute in element <"+tok.name+">: "+dup, tok.pos, input)
-			}
-			element:=&Node{Type: ElementNode, Tag: tok.name, Attrs: tok.attrs}
+
+			element := &Node{Type: ElementNode, Tag: tok.name, Attrs: normalizedAttrs}
 			stack[len(stack)-1].AppendChild(element)
-			if tok.selfClosing || isVoidElement(tok.name) {
+			if tok.selfClosing {
 				continue
 			}
-			stack=append(stack, element)
+			if _, ok := voidElements[tok.name]; ok {
+				continue
+			}
+			stack = append(stack, element)
 		case tokenEndTag:
-			if len(stack)<=1 {
-				return nil, makeParseError("unmatched_closing_tag", "closing tag without matching opening tag: </"+tok.name+">", tok.pos, input)
+			if len(stack) <= 1 {
+				continue
 			}
-			top:=stack[len(stack)-1]
-			if top.Tag!=tok.name {
-				return nil, makeParseError("mismatched_closing_tag", "closing tag mismatch: expected </"+top.Tag+"> but got </"+tok.name+">", tok.pos, input)
+			matchIdx := -1
+			for i := len(stack) - 1; i >= 1; i-- {
+				if stack[i].Tag == tok.name {
+					matchIdx = i
+					break
+				}
 			}
-			stack=stack[:len(stack)-1]
+			if matchIdx == -1 {
+				continue
+			}
+			stack = stack[:matchIdx]
 		}
 	}
 }
 
-func findDuplicateAttribute(attrs []Attribute) string {
-	seen:=make(map[string]struct{}, len(attrs))
-	for _, attr:=range attrs {
-		if attr.Name=="" {
-			continue
-		}
-		if _, ok:=seen[attr.Name]; ok {
-			return attr.Name
-		}
-		seen[attr.Name]=struct{}{}
-	}
-	return ""
-}
-
-func isVoidElement(tag string) bool {
-	_, ok:=voidElements[tag]
-	return ok
-}
-
-var voidElements=map[string]struct{}{
-	"area": {},
-	"base": {},
-	"br": {},
-	"col": {},
-	"embed": {},
-	"hr": {},
-	"img": {},
-	"input": {},
-	"link": {},
-	"meta": {},
-	"param": {},
+var voidElements = map[string]struct{}{
+	"area":   {},
+	"base":   {},
+	"br":     {},
+	"col":    {},
+	"embed":  {},
+	"hr":     {},
+	"img":    {},
+	"input":  {},
+	"link":   {},
+	"meta":   {},
+	"param":  {},
 	"source": {},
-	"track": {},
-	"wbr": {},
+	"track":  {},
+	"wbr":    {},
 }
