@@ -2,34 +2,34 @@ package src
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
+	"io"
+	"net/http"
 	"strings"
 )
 
-func parseToDOMTreeManual(input string) (*Node, error) {
-	raw:=strings.TrimSpace(input)
-	if raw=="" {
+func ParseToDOMTreeManual(input string) (*Node, error) {
+	raw := strings.TrimSpace(input)
+	if raw == "" {
 		return nil, fmt.Errorf("Input HTML kosong")
 	}
 	return Parse(raw)
 }
 
-func ParseHTMLToDOMTreeInput(filePath string) (*Node, error) {
-	path:=strings.TrimSpace(filePath)
-	if path=="" {
-		return nil, fmt.Errorf("File kosong")
+func ParseURLToDOMTree(rawURL string) (*Node, error) {
+	resp, err := http.Get(rawURL)
+	if err != nil {
+		return nil, fmt.Errorf("Gagal mengambil data dari URL: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Server mengembalikan status: %s", resp.Status)
 	}
 
-	extension:=strings.ToLower(filepath.Ext(path))
-	if extension!=".html" {
-		return nil, fmt.Errorf("Format input invalid")
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("Gagal membaca response body: %v", err)
 	}
 
-	content, err:=os.ReadFile(path)
-	if err!=nil {
-		return nil, fmt.Errorf("Gagal membaca file")
-	}
-
-	return parseToDOMTreeManual(string(content))
+	return ParseToDOMTreeManual(string(body))
 }
