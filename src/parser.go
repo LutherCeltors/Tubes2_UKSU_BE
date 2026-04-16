@@ -1,7 +1,8 @@
 package src
 
 func Parse(input string) (*Node, error) {
-	root := &Node{Type: DocumentNode}
+	nodeCounter := 1
+	root := &Node{ID: nodeCounter, Type: DocumentNode}
 	stack := []*Node{root}
 	lex := newTokenizer(input)
 
@@ -15,11 +16,14 @@ func Parse(input string) (*Node, error) {
 			if tok.data == "" {
 				continue
 			}
-			stack[len(stack)-1].AppendChild(&Node{Type: TextNode, Data: tok.data})
+			nodeCounter++
+			stack[len(stack)-1].AppendChild(&Node{ID: nodeCounter, Type: TextNode, Data: tok.data})
 		case tokenComment:
-			stack[len(stack)-1].AppendChild(&Node{Type: CommentNode, Data: tok.data})
+			nodeCounter++
+			stack[len(stack)-1].AppendChild(&Node{ID: nodeCounter, Type: CommentNode, Data: tok.data})
 		case tokenDoctype:
-			stack[len(stack)-1].AppendChild(&Node{Type: DoctypeNode, Data: tok.data})
+			nodeCounter++
+			stack[len(stack)-1].AppendChild(&Node{ID: nodeCounter, Type: DoctypeNode, Data: tok.data})
 		case tokenStartTag:
 			seenAttrs := make(map[string]struct{}, len(tok.attrs))
 			normalizedAttrs := make([]Attribute, 0, len(tok.attrs))
@@ -34,7 +38,8 @@ func Parse(input string) (*Node, error) {
 				normalizedAttrs = append(normalizedAttrs, attr)
 			}
 
-			element := &Node{Type: ElementNode, Tag: tok.name, Attrs: normalizedAttrs}
+			nodeCounter++
+			element := &Node{ID: nodeCounter, Type: ElementNode, Tag: tok.name, Attrs: normalizedAttrs}
 			stack[len(stack)-1].AppendChild(element)
 			if tok.selfClosing {
 				continue

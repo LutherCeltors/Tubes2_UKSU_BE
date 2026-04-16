@@ -59,7 +59,7 @@ func getResult(c *gin.Context) {
 	}
 
 	start := time.Now()
-	// var logs []src.LogEntry Ini ada di DFS.go
+	var logs []src.LogEntry
 	var visitedCount int
 	var searchErr error
 
@@ -80,15 +80,14 @@ func getResult(c *gin.Context) {
 
 	executionTimeMs := float64(time.Since(start).Microseconds()) / 1000.0
 	maxDepth := CalculateMaxDepth(root)
-	// jsonTree := src.ConvertToJSONNode(root)
-	// Utilities di node.go nanti
+	jsonTree := src.ConvertToJSONNode(root)
 
 	c.JSON(http.StatusOK, gin.H{
 		"executionTimeMs": executionTimeMs,
 		"nodesVisited":    visitedCount,
 		"maxDepth":        maxDepth,
-		// "tree":            jsonTree,
-		// "traversalLog": logs,
+		"tree":            jsonTree,
+		"traversalLog":    logs,
 	})
 }
 
