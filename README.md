@@ -117,24 +117,6 @@ Frontend akan berjalan pada:
 http://localhost:5173
 ```
 
-Pada mode development, request ke `/api` akan diteruskan ke backend melalui proxy Vite dengan target default:
-
-```text
-http://localhost:8080
-```
-
-Jika ingin melakukan build frontend:
-
-```bash
-npm run build
-```
-
-Untuk menjalankan hasil build secara lokal:
-
-```bash
-npm run preview
-```
-
 ### Menjalankan Backend dengan Docker
 
 Masuk ke folder backend:
@@ -170,8 +152,9 @@ docker compose up --build
 ```
 
 Frontend akan tersedia pada:
-
-
+```text
+http://localhost:5173
+```
 
 ## Checklist Pengerjaan
 
