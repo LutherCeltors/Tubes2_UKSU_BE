@@ -173,9 +173,27 @@ docker compose up --build
 
 Frontend akan tersedia pada:
 
-```text
-http://localhost:5173
-```
+
+
+## Checklist Pengerjaan
+
+| No | Poin                                                                       | Ya | Tidak |
+| -- | -------------------------------------------------------------------------- | -- | ----- |
+| 1  | Aplikasi berhasil di kompilasi tanpa kesalahan                             | ✓  |       |
+| 2  | Aplikasi berhasil dijalankan                                               | ✓  |       |
+| 3  | Aplikasi dapat menerima input URL web, pilihan algoritma, CSS selector, dan jumlah hasil | ✓  |       |
+| 4  | Aplikasi dapat melakukan scraping terhadap web pada input                  | ✓  |       |
+| 5  | Aplikasi dapat menampilkan visualisasi pohon DOM                           | ✓  |       |
+| 6  | Aplikasi dapat menelusuri pohon DOM dan menampilkan hasil penelusuran      | ✓  |       |
+| 7  | Aplikasi dapat menandai jalur tempuh oleh algoritma                        | ✓  |       |
+| 8  | Aplikasi dapat menyimpan jalur yang ditempuh algoritma dalam traversal log | ✓  |       |
+| 9  | [Bonus] Membuat video                                                      | ✓  |       |
+| 10 | [Bonus] Docker                                                             | ✓  |       |
+| 11 | [Bonus] Deploy aplikasi                                                    | ✓  |       |
+| 12 | [Bonus] Implementasi animasi pada penelusuran pohon                        | ✓  |       |
+| 13 | [Bonus] Implementasi multithreading                                        | ✓  |       |
+| 14 | [Bonus] Implementasi LCA Binary Lifting                                    | ✓  |       |
+
 ## Author
 - 13524021 Natanael Imandatua Manurung
 - 13524052 Raynard Fausta
