@@ -1,5 +1,7 @@
 package src
 
+import "strings"
+
 func Parse(input string) (*Node, error) {
 	nodeCounter := 1
 	root := &Node{ID: nodeCounter, Type: DocumentNode}
@@ -16,8 +18,18 @@ func Parse(input string) (*Node, error) {
 			if tok.data == "" {
 				continue
 			}
+			parent := stack[len(stack)-1]
+			if strings.TrimSpace(tok.data) == "" {
+				if parent.Type == ElementNode {
+					if _, isRaw := rawTextElements[parent.Tag]; isRaw {
+						nodeCounter++
+						parent.AppendChild(&Node{ID: nodeCounter, Type: TextNode, Data: tok.data})
+					}
+				}
+				continue
+			}
 			nodeCounter++
-			stack[len(stack)-1].AppendChild(&Node{ID: nodeCounter, Type: TextNode, Data: tok.data})
+			parent.AppendChild(&Node{ID: nodeCounter, Type: TextNode, Data: tok.data})
 		case tokenComment:
 			nodeCounter++
 			stack[len(stack)-1].AppendChild(&Node{ID: nodeCounter, Type: CommentNode, Data: tok.data})

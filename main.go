@@ -147,7 +147,6 @@ func getEnv(key, fallback string) string {
 //   "nodesVisited": 15,
 //   "maxDepth": 4,
 
-//   // 1. The Tree (Simplified safely for JSON without circular parent pointers)
 //   "tree": {
 //      "id": 1,
 //      "tag": "html",
@@ -162,7 +161,6 @@ func getEnv(key, fallback string) string {
 //      ]
 //   },
 
-//   // 2. The Unified Log (Matches marked directly in the log sequence)
 //   "traversalLog": [
 //      { "nodeId": 1, "tag": "html", "status": "visited" },
 //      { "nodeId": 2, "tag": "body", "status": "visited" },

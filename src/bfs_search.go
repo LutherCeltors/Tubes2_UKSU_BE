@@ -39,20 +39,25 @@ func BFSSearch(root *Node, query string, topN int) ([]*Node, []LogEntry, int, er
 			go func(idx int, n *Node, batch int) {
 				defer wg.Done()
 				r := levelResult{children: n.Children}
-				if n.Type == ElementNode || n.Type == DocumentNode {
+				switch n.Type {
+				case ElementNode:
 					atomic.AddInt32(&nodesVisited, 1)
-					if n.Type == ElementNode {
-						match := selector.Match(n)
-						if match {
-							r.matched = n
-						}
-						status := "visited"
-						if match {
-							status = "matched"
-						}
-						entry := LogEntry{NodeID: n.ID, Tag: n.Tag, Status: status, Batch: batch}
-						r.logEntry = &entry
+					match := selector.Match(n)
+					if match {
+						r.matched = n
 					}
+					status := "visited"
+					if match {
+						status = "matched"
+					}
+					entry := LogEntry{NodeID: n.ID, Tag: n.Tag, Status: status, Batch: batch}
+					r.logEntry = &entry
+				case DocumentNode:
+					atomic.AddInt32(&nodesVisited, 1)
+				case TextNode:
+					atomic.AddInt32(&nodesVisited, 1)
+					entry := LogEntry{NodeID: n.ID, Tag: "#text", Status: "visited", Batch: batch}
+					r.logEntry = &entry
 				}
 				levelResults[idx] = r
 			}(i, node, levelIndex)
@@ -106,18 +111,23 @@ func BFSSearchSingle(root *Node, query string, topN int) ([]*Node, []LogEntry, i
 		node := queue[0]
 		queue = queue[1:]
 
-		if node.Type == ElementNode || node.Type == DocumentNode {
+		switch node.Type {
+		case ElementNode:
 			nodesVisited++
-			if node.Type == ElementNode {
-				match := selector.Match(node)
-				status := "visited"
-				if match {
-					status = "matched"
-					results = append(results, node)
-				}
-				logs = append(logs, LogEntry{NodeID: node.ID, Tag: node.Tag, Status: status, Batch: batchIndex})
-				batchIndex++
+			match := selector.Match(node)
+			status := "visited"
+			if match {
+				status = "matched"
+				results = append(results, node)
 			}
+			logs = append(logs, LogEntry{NodeID: node.ID, Tag: node.Tag, Status: status, Batch: batchIndex})
+			batchIndex++
+		case DocumentNode:
+			nodesVisited++
+		case TextNode:
+			nodesVisited++
+			logs = append(logs, LogEntry{NodeID: node.ID, Tag: "#text", Status: "visited", Batch: batchIndex})
+			batchIndex++
 		}
 
 		if topN > 0 && len(results) >= topN {

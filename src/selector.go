@@ -104,7 +104,6 @@ type ComplexSelector struct {
 	Left   *ComplexSelector
 }
 
-// Match evaluates right-to-left (bottom-up)
 func (cs *ComplexSelector) Match(n *Node) bool {
 	if n == nil {
 		return false

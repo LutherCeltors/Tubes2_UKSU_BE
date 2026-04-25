@@ -42,20 +42,24 @@ func SearchDFS(root *Node, query string, topN int) ([]*Node, []LogEntry, int, er
 
 		var r subtreeResult
 
-		if n.Type == ElementNode || n.Type == DocumentNode {
+		switch n.Type {
+		case ElementNode:
 			r.visited = 1
-			if n.Type == ElementNode {
-				match := selector.Match(n)
-				if match {
-					atomic.AddInt32(&totalFound, 1)
-					r.results = []*Node{n}
-				}
-				status := "visited"
-				if match {
-					status = "matched"
-				}
-				r.logs = []LogEntry{{NodeID: n.ID, Tag: n.Tag, Status: status, Batch: depth}}
+			match := selector.Match(n)
+			if match {
+				atomic.AddInt32(&totalFound, 1)
+				r.results = []*Node{n}
 			}
+			status := "visited"
+			if match {
+				status = "matched"
+			}
+			r.logs = []LogEntry{{NodeID: n.ID, Tag: n.Tag, Status: status, Batch: depth}}
+		case DocumentNode:
+			r.visited = 1
+		case TextNode:
+			r.visited = 1
+			r.logs = []LogEntry{{NodeID: n.ID, Tag: "#text", Status: "visited", Batch: depth}}
 		}
 
 		if len(n.Children) == 0 {
@@ -115,18 +119,23 @@ func SearchDFSSingle(root *Node, query string, topN int) ([]*Node, []LogEntry, i
 			return
 		}
 
-		if n.Type == ElementNode || n.Type == DocumentNode {
+		switch n.Type {
+		case ElementNode:
 			nodesVisited++
-			if n.Type == ElementNode {
-				match := selector.Match(n)
-				status := "visited"
-				if match {
-					status = "matched"
-					results = append(results, n)
-				}
-				logs = append(logs, LogEntry{NodeID: n.ID, Tag: n.Tag, Status: status, Batch: batchIndex})
-				batchIndex++
+			match := selector.Match(n)
+			status := "visited"
+			if match {
+				status = "matched"
+				results = append(results, n)
 			}
+			logs = append(logs, LogEntry{NodeID: n.ID, Tag: n.Tag, Status: status, Batch: batchIndex})
+			batchIndex++
+		case DocumentNode:
+			nodesVisited++
+		case TextNode:
+			nodesVisited++
+			logs = append(logs, LogEntry{NodeID: n.ID, Tag: "#text", Status: "visited", Batch: batchIndex})
+			batchIndex++
 		}
 
 		for _, child := range n.Children {
