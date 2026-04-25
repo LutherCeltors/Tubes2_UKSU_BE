@@ -25,9 +25,10 @@ type token struct {
 }
 
 type tokenizer struct {
-	input  string
-	length int
-	pos    int
+	input      string
+	length     int
+	pos        int
+	rawtextTag string
 }
 
 func newTokenizer(input string) *tokenizer {
@@ -37,7 +38,33 @@ func newTokenizer(input string) *tokenizer {
 	}
 }
 
+var rawTextElements = map[string]struct{}{
+	"script":   {},
+	"style":    {},
+	"textarea": {},
+	"title":    {},
+	"iframe":   {},
+	"noscript": {},
+	"noframes": {},
+	"noembed":  {},
+	"xmp":      {},
+	"plaintext": {},
+}
+
 func (t *tokenizer) nextToken() token {
+	tok := t.nextTokenInternal()
+	if tok.kind == tokenStartTag && !tok.selfClosing {
+		if _, ok := rawTextElements[tok.name]; ok {
+			t.rawtextTag = tok.name
+		}
+	}
+	return tok
+}
+
+func (t *tokenizer) nextTokenInternal() token {
+	if t.rawtextTag != "" {
+		return t.readRawText()
+	}
 	if t.pos >= t.length {
 		return token{kind: tokenEOF}
 	}
@@ -47,6 +74,9 @@ func (t *tokenizer) nextToken() token {
 
 		if strings.HasPrefix(t.input[t.pos:], "<!--") {
 			return t.readComment()
+		}
+		if strings.HasPrefix(t.input[t.pos:], "<![CDATA[") {
+			return t.readCData()
 		}
 		if strings.HasPrefix(t.input[t.pos:], "<!") {
 			return t.readDeclaration()
@@ -74,6 +104,75 @@ func (t *tokenizer) nextToken() token {
 	}
 
 	return t.readText()
+}
+
+func (t *tokenizer) readRawText() token {
+	rawTag := t.rawtextTag
+	begin := t.pos
+	needle := "</" + rawTag
+
+	search := t.pos
+	for search < t.length {
+		idx := indexFoldFrom(t.input, needle, search)
+		if idx == -1 {
+			data := t.input[begin:]
+			t.pos = t.length
+			t.rawtextTag = ""
+			return token{kind: tokenText, data: data}
+		}
+		afterIdx := idx + len(needle)
+		if afterIdx >= t.length {
+			data := t.input[begin:idx]
+			t.pos = idx
+			t.rawtextTag = ""
+			return token{kind: tokenText, data: data}
+		}
+		ch := t.input[afterIdx]
+		if ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t' || ch == '\f' || ch == '>' || ch == '/' {
+			t.rawtextTag = ""
+			if idx == begin {
+				return t.nextTokenInternal()
+			}
+			data := t.input[begin:idx]
+			t.pos = idx
+			return token{kind: tokenText, data: data}
+		}
+		search = afterIdx
+	}
+
+	data := t.input[begin:]
+	t.pos = t.length
+	t.rawtextTag = ""
+	return token{kind: tokenText, data: data}
+}
+
+func (t *tokenizer) readCData() token {
+	t.advanceN(9)
+	begin := t.pos
+	idx := strings.Index(t.input[t.pos:], "]]>")
+	if idx == -1 {
+		data := t.input[begin:]
+		t.pos = t.length
+		return token{kind: tokenText, data: data}
+	}
+	end := t.pos + idx
+	data := t.input[begin:end]
+	t.pos = end + 3
+	return token{kind: tokenText, data: data}
+}
+
+func indexFoldFrom(s, sub string, start int) int {
+	if start < 0 {
+		start = 0
+	}
+	if start > len(s) {
+		return -1
+	}
+	idx := strings.Index(strings.ToLower(s[start:]), strings.ToLower(sub))
+	if idx == -1 {
+		return -1
+	}
+	return start + idx
 }
 
 func (t *tokenizer) readText() token {
@@ -184,8 +283,10 @@ func (t *tokenizer) readStartTag() (token, bool) {
 
 		attrName := t.readAttributeName()
 		if attrName == "" {
-			t.pos = start
-			return token{}, false
+			if t.pos < t.length {
+				t.advanceByte()
+			}
+			continue
 		}
 
 		attrValue := ""
